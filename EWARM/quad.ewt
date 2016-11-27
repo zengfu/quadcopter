@@ -1191,12 +1191,6 @@
       <name>$PROJ_DIR$\..\Bsp\callback.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\Bsp\control.c</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\..\Bsp\control.h</name>
-    </file>
-    <file>
       <name>$PROJ_DIR$\..\Bsp\data.c</name>
     </file>
     <file>
@@ -1225,6 +1219,12 @@
     </file>
     <file>
       <name>$PROJ_DIR$\..\Bsp\MS5611.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Bsp\pid.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Bsp\pid.h</name>
     </file>
   </group>
   <group>

@@ -9,7 +9,13 @@
 
 #include "stm32f4xx_hal.h"
 #include "ANO_DT.h"
-#include "control.h"
+#include "pid.h"
+
+
+extern PID_TypeDef euler_pitch;
+extern PID_TypeDef euler_roll;
+extern PID_TypeDef gyro_pitch;
+extern PID_TypeDef gyro_roll;
 
 
 #include "data.h"
@@ -98,23 +104,23 @@ void ANO_DT_Data_Exchange(void)
 	else if(f.send_power)
 	{
 		f.send_power = 0;
-		ANO_DT_Send_Power(0,ctrl.power);
+		ANO_DT_Send_Power(0,0);
 	}
 /////////////////////////////////////////////////////////////////////////////////////
 	else if(f.send_pid1)
 	{
 		f.send_pid1 = 0;
-		ANO_DT_Send_PID(1,sp_roll.Kp,sp_roll.Ki,sp_roll.Kd,
-					sp_pitch.Kp,sp_pitch.Ki,sp_pitch.Kd,
-					sp_yaw.Kp,sp_yaw.Ki,sp_yaw.Kd);
+		ANO_DT_Send_PID(1,gyro_roll.kp,gyro_roll.ki,gyro_roll.kd,
+					gyro_pitch.kp,gyro_pitch.ki,gyro_pitch.kd,
+					0,0,0);
 	}	
 /////////////////////////////////////////////////////////////////////////////////////
 	else if(f.send_pid2)
 	{
 		f.send_pid2 = 0;
-		ANO_DT_Send_PID(2,pp_roll.Kp,pp_roll.Ki,pp_roll.Kd,
-					pp_pitch.Kp,pp_pitch.Ki,pp_pitch.Kd,
-					pp_yaw.Kp,pp_yaw.Ki,pp_yaw.Kd);
+		ANO_DT_Send_PID(2,euler_roll.kp,euler_roll.ki,euler_roll.kd,
+					euler_pitch.kp,euler_pitch.ki,euler_pitch.kd,
+					0,0,0);
 	}
 /////////////////////////////////////////////////////////////////////////////////////
 	else if(f.send_pid3)
@@ -252,33 +258,33 @@ void ANO_DT_Data_Receive_Anl(u8 *data_buf,u8 num)
 
 	if(*(data_buf+2)==0X10)								//PID1
     {
-        sp_roll.Kp  = 0.001*( (vs16)(*(data_buf+4)<<8)|*(data_buf+5) );
-        sp_roll.Ki= 0.001*( (vs16)(*(data_buf+6)<<8)|*(data_buf+7) );
-        sp_roll.Kd= 0.001*( (vs16)(*(data_buf+8)<<8)|*(data_buf+9) );
-        sp_pitch.Kp= 0.001*( (vs16)(*(data_buf+10)<<8)|*(data_buf+11) );
-        sp_pitch.Ki= 0.001*( (vs16)(*(data_buf+12)<<8)|*(data_buf+13) );
-        sp_pitch.Kd= 0.001*( (vs16)(*(data_buf+14)<<8)|*(data_buf+15) );
-        sp_yaw.Kp= 0.001*( (vs16)(*(data_buf+16)<<8)|*(data_buf+17) );
-        sp_yaw.Ki= 0.001*( (vs16)(*(data_buf+18)<<8)|*(data_buf+19) );
-        sp_yaw.Kd= 0.001*( (vs16)(*(data_buf+20)<<8)|*(data_buf+21) );
+        gyro_roll.kp  = 0.01*( (vs16)(*(data_buf+4)<<8)|*(data_buf+5) );
+        gyro_roll.ki= 0.01*( (vs16)(*(data_buf+6)<<8)|*(data_buf+7) );
+        gyro_roll.kd= 0.01*( (vs16)(*(data_buf+8)<<8)|*(data_buf+9) );
+        gyro_pitch.kp= 0.01*( (vs16)(*(data_buf+10)<<8)|*(data_buf+11) );
+        gyro_pitch.ki= 0.01*( (vs16)(*(data_buf+12)<<8)|*(data_buf+13) );
+        gyro_pitch.kd= 0.01*( (vs16)(*(data_buf+14)<<8)|*(data_buf+15) );
+        //sp_yaw.Kp= 0.001*( (vs16)(*(data_buf+16)<<8)|*(data_buf+17) );
+        //sp_yaw.Ki= 0.001*( (vs16)(*(data_buf+18)<<8)|*(data_buf+19) );
+        //sp_yaw.Kd= 0.001*( (vs16)(*(data_buf+20)<<8)|*(data_buf+21) );
         ANO_DT_Send_Check(*(data_buf+2),sum);
 	//Param_SavePID();
-        PidUpate();
+        //PidUpate();
     }
     if(*(data_buf+2)==0X11)								//PID2
     {
-        pp_roll.Kp 	= 0.001*( (vs16)(*(data_buf+4)<<8)|*(data_buf+5) );
-        pp_roll.Ki 	= 0.001*( (vs16)(*(data_buf+6)<<8)|*(data_buf+7) );
-        pp_roll.Kd 	= 0.001*( (vs16)(*(data_buf+8)<<8)|*(data_buf+9) );
-        pp_pitch.Kp 	= 0.001*( (vs16)(*(data_buf+10)<<8)|*(data_buf+11) );
-        pp_pitch.Ki 	= 0.001*( (vs16)(*(data_buf+12)<<8)|*(data_buf+13) );
-        pp_pitch.Kd 	= 0.001*( (vs16)(*(data_buf+14)<<8)|*(data_buf+15) );
-        pp_yaw.Kp	  = 0.001*( (vs16)(*(data_buf+16)<<8)|*(data_buf+17) );
-        pp_yaw.Ki 	= 0.001*( (vs16)(*(data_buf+18)<<8)|*(data_buf+19) );
-        pp_yaw.Kd 	= 0.001*( (vs16)(*(data_buf+20)<<8)|*(data_buf+21) );
+        euler_roll.kp 	= 0.01*( (vs16)(*(data_buf+4)<<8)|*(data_buf+5) );
+        euler_roll.ki 	= 0.01*( (vs16)(*(data_buf+6)<<8)|*(data_buf+7) );
+        euler_roll.kd 	= 0.01*( (vs16)(*(data_buf+8)<<8)|*(data_buf+9) );
+        euler_pitch.kp 	= 0.01*( (vs16)(*(data_buf+10)<<8)|*(data_buf+11) );
+        euler_pitch.ki 	= 0.01*( (vs16)(*(data_buf+12)<<8)|*(data_buf+13) );
+        euler_pitch.kd 	= 0.01*( (vs16)(*(data_buf+14)<<8)|*(data_buf+15) );
+        //pp_yaw.Kp	  = 0.001*( (vs16)(*(data_buf+16)<<8)|*(data_buf+17) );
+        //pp_yaw.Ki 	= 0.001*( (vs16)(*(data_buf+18)<<8)|*(data_buf+19) );
+        //pp_yaw.Kd 	= 0.001*( (vs16)(*(data_buf+20)<<8)|*(data_buf+21) );
         ANO_DT_Send_Check(*(data_buf+2),sum);
 	//Param_SavePID();
-        PidUpate();
+        //PidUpate();
     }
     if(*(data_buf+2)==0X12)								//PID3
     {	

@@ -38,7 +38,7 @@
 #include "mpu9250.h"
 #include "log.h"
 #include "data.h"
-#include "control.h"
+#include "pid.h"
 #include "ANO_DT.h"
 /* USER CODE END Includes */
 
@@ -95,7 +95,7 @@ uint16_t data=0;
 float t,p;
 int16_t accel[3],gyro[3],mag[3];
 uint8_t b=0;
-
+uint32_t adc;
 
 /* USER CODE END 0 */
 
@@ -132,8 +132,9 @@ int main(void)
   HAL_UART_Receive_IT(&huart3,&b,1);
   MPU9250_Init();
   DataInit(); 
-  MotorInit();
-  throttle(0);
+  control_init();
+  throttle(00);
+  HAL_ADC_Start(&hadc1);
   pass1tick=HAL_GetTick();
   pass2tick=pass1tick;
   /* USER CODE END 2 */
@@ -150,12 +151,13 @@ int main(void)
     {
       pass1tick=newtick;
       UpdateData();
-      //ControlUpdate();
+      control_updata();
     }
     if(((newtick=HAL_GetTick())-pass2tick)>=20)
     {
       //transport();
       //printf("test\n");
+      adc=HAL_ADC_GetValue(&hadc1);
       pass2tick=newtick;
     }
     
@@ -229,9 +231,9 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = DISABLE;
@@ -328,9 +330,9 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
+  htim3.Init.Prescaler = 0;//84m
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1200;
+  htim3.Init.Period =500 -1;//168k
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
   {
@@ -394,7 +396,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 1200;
+  htim4.Init.Period = 500-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
   {
@@ -458,7 +460,7 @@ static void MX_TIM5_Init(void)
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 0;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 1200;
+  htim5.Init.Period = 500-1;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
   {

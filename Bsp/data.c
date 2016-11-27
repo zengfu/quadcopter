@@ -19,18 +19,29 @@ static SensorData_t SensorData;
 
 Data_t Data;
 
+static short gyro_offset[3]={0};
+
 void DataInit()
 {
   float roll,pitch,yaw;
-  float mx,my,mz;
+  short gyro[3];
+  for(int i=0;i<200;i++)
+  {
+    MPU9250_Get3AxisGyroRawData(gyro);
+    gyro_offset[0]+=gyro[0];
+    gyro_offset[1]+=gyro[1];
+    gyro_offset[2]+=gyro[2];
+    HAL_Delay(1);
+    
+  }
+  gyro_offset[0]/=200;
+  gyro_offset[1]/=200;
+  gyro_offset[2]/=200;
   //TODO: the part need low filter to reduce tolerance
   memset((uint8_t*)&SensorData,0,sizeof(SensorData));
   UpdateSensorData();  
   Data.pSensor=&SensorData;
   
-  mx=Data.pSensor->mag[0];
-  my=Data.pSensor->mag[1];
-  mz=Data.pSensor->mag[2];
   roll=atan2(Data.pSensor->accel[1],Data.pSensor->accel[2]);  //
   //pitch=(asin(CLMAP(Data.pSensor->accel[1] / 9.8,-1.0,1.0)));
   pitch=-atan2(Data.pSensor->accel[0],Data.pSensor->accel[2]);
@@ -52,18 +63,14 @@ void UpdateData()
 void Quat2Euler()
 {
   float q0,q1,q2,q3;
-  float pitch,roll,yaw,yaw1;
-  float mx,my,mz,gz;
+  float pitch,roll,yaw;
+  
   q0=Data.q[0];
   q1=Data.q[1];
   q2=Data.q[2];
   q3=Data.q[3];
   
-  mx=Data.pSensor->mag[0];
-  my=Data.pSensor->mag[1];
-  mz=Data.pSensor->mag[2];
   
-  gz=Data.pSensor->gyro[2]*57.3;
   yaw=Data.euler[2];
    
   //roll=asin(CLMAP(2 * (q2 * q3 + q0 * q1) , -1.0f , 1.0f));
@@ -125,9 +132,9 @@ void UpdateSensorData()
   SensorData.accel[0]=accel[0]/32768.0*2.0*9.8;//m2/s
   SensorData.accel[1]=accel[1]/32768.0*2.0*9.8;
   SensorData.accel[2]=accel[2]/32768.0*2.0*9.8;
-  SensorData.gyro[0]=gyro[0]/32768.0*2000/57.32;//radio
-  SensorData.gyro[1]=gyro[1]/32768.0*2000/57.32;
-  SensorData.gyro[2]=gyro[2]/32768.0*2000/57.32;
+  SensorData.gyro[0]=(gyro[0]-gyro_offset[0])/32768.0*2000/57.32;//radio
+  SensorData.gyro[1]=(gyro[1]-gyro_offset[1])/32768.0*2000/57.32;
+  SensorData.gyro[2]=(gyro[2]-gyro_offset[2])/32768.0*2000/57.32;
   SensorData.mag[0]=(float)mag[0];
   SensorData.mag[1]=(float)mag[1];
   SensorData.mag[2]=(float)mag[2];
